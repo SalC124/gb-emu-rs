@@ -1,5 +1,5 @@
 {
-  description = "ESP + Android + Rust + Dioxus environment (I HATE NIX)";
+  description = "Android + Rust + Dioxus environment (base simplified config)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -7,26 +7,10 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
-  outputs =
-    { self
-    , nixpkgs
-    , flake-utils
-    , rust-overlay
-    , ...
-    }:
-    let
-      rustTarget = "xtensa-esp32-espidf";
-      overlaySet = {
-        overlays.default = import ./overlay.nix;
-      };
-    in
-    flake-utils.lib.eachDefaultSystem
-      (system:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, ... }:
+    flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [
-          rust-overlay.overlays.default
-          overlaySet.overlays.default
-        ];
+        overlays = [ rust-overlay.overlays.default ];
 
         pkgs = import nixpkgs {
           inherit system overlays;
@@ -60,19 +44,16 @@
 
         androidSdkRoot = "${android.androidsdk}/libexec/android-sdk";
 
-        rustToolchain =
-          if rustTarget == "xtensa-esp32-espidf" then pkgs.rust-xtensa
-          else
-            pkgs.rust-bin.stable.latest.default.override {
-              extensions = [ "rust-src" "rust-analyzer" "clippy" "rustfmt" ];
-              targets = [
-                "wasm32-unknown-unknown"
-                "aarch64-linux-android"
-                "armv7-linux-androideabi"
-                "i686-linux-android"
-                "x86_64-linux-android"
-              ];
-            };
+        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+          extensions = [ "rust-src" "rust-analyzer" "clippy" "rustfmt" ];
+          targets = [
+            "wasm32-unknown-unknown"
+            "aarch64-linux-android"
+            "armv7-linux-androideabi"
+            "i686-linux-android"
+            "x86_64-linux-android"
+          ];
+        };
 
         dioxusCli = pkgs.rustPlatform.buildRustPackage rec {
           pname = "dioxus-cli";
@@ -88,35 +69,6 @@
           doCheck = false;
         };
 
-        espBuildInputs = [
-          pkgs.git
-          pkgs.wget
-          pkgs.gnumake
-
-          pkgs.flex
-          pkgs.bison
-          pkgs.gperf
-          pkgs.pkg-config
-          pkgs.cargo-generate
-
-          pkgs.cmake
-          pkgs.ninja
-
-          pkgs.ncurses5
-
-          pkgs.llvm-xtensa
-          pkgs.llvm-xtensa-lib
-          pkgs.rust-xtensa
-
-          pkgs.espflash
-          pkgs.ldproxy
-
-          pkgs.python3
-          pkgs.python3Packages.pip
-          pkgs.python3Packages.virtualenv
-
-        ];
-
         rustBuildInputs = [
           pkgs.openssl
           pkgs.rustup
@@ -131,20 +83,19 @@
         ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
           pkgs.glib
           pkgs.gtk3
-          pkgs.gdk-pixbuf
-          pkgs.webkitgtk_4_1
           pkgs.libsoup_3
+          pkgs.webkitgtk_4_1
           pkgs.xdotool
         ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
-          IOKit
-          Carbon
-          WebKit
-          Security
-          Cocoa
+          pkgs.darwin.apple_sdk.frameworks.IOKit
+          pkgs.darwin.apple_sdk.frameworks.Carbon
+          pkgs.darwin.apple_sdk.frameworks.WebKit
+          pkgs.darwin.apple_sdk.frameworks.Security
+          pkgs.darwin.apple_sdk.frameworks.Cocoa
         ]);
 
         # FHS environment to run Android tools
-        fhsEnv = pkgs.buildFHSEnv {
+        fhsEnv = pkgs.buildFHSUserEnv {
           name = "dioxus-android-fhs";
           targetPkgs = pkgs: with pkgs; [
             rustToolchain
@@ -196,25 +147,8 @@
 
       in
       {
-        packages = {
-          inherit
-            (pkgs)
-            esp-idf-full
-            esp-idf-esp32
-            esp-idf-esp32c3
-            esp-idf-esp32s2
-            esp-idf-esp32s3
-            esp-idf-esp32c6
-            esp-idf-esp32h2
-            espflash
-            ldproxy
-            llvm-xtensa
-            llvm-xtensa-lib
-            rust-xtensa
-            ;
-        };
         devShells.default = pkgs.mkShell {
-          name = "esp-dioxus-android-shell";
+          name = "dioxus-android-shell";
 
           buildInputs = [
             java
@@ -225,7 +159,7 @@
             pkgs.flutter
             pkgs.android-studio
             pkgs.bundletool
-          ] ++ rustBuildInputs ++ espBuildInputs;
+          ] ++ rustBuildInputs;
 
           env = {
             JAVA_HOME = "${java}";
@@ -235,22 +169,10 @@
           };
 
           shellHook = ''
-            # fixes libstdc++ issues and libgl.so issues
-            export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [pkgs.libxml2 pkgs.zlib pkgs.stdenv.cc.cc.lib]}
-            export ESP_IDF_VERSION=${pkgs.esp-idf-full.version}
-            export PATH=$PATH:${pkgs.llvm-xtensa}/bin
-            export PATH=$PATH:${pkgs.rust-xtensa}/bin
-            export LIBCLANG_PATH=${pkgs.llvm-xtensa-lib}/lib
-            export RUSTFLAGS="--cfg espidf_time64"
-
             echo ""
             export PATH=$PATH:${androidSdkRoot}/platform-tools
             echo "run 'adb start-server'"
           '';
         };
-        formatter = pkgs.alejandra;
-        checks = import ./tests/build-idf-examples.nix { inherit pkgs; };
-      }
-      ) //
-    overlaySet;
+      });
 }

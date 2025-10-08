@@ -1,13 +1,13 @@
 {
   version ? "18.1.2_20240912",
-  hash ? "sha256-ruFbjgJED57GqAcPAXYh3EANvWKkcB+c9Fbb400qDE0=",
+  hash ? "sha256-z9b8tB1tNlHj5727N9DgtpG0PmgN/0yZjPd/fk7NBcU=",
   stdenv,
   lib,
   fetchurl,
   makeWrapper,
-  buildFHSEnv,
+  buildFHSUserEnv,
 }: let
-  fhsEnv = buildFHSEnv {
+  fhsEnv = buildFHSUserEnv {
     name = "xtensa-toolchain-env";
     targetPkgs = pkgs: with pkgs; [zlib libxml2];
     runScript = "";
@@ -18,7 +18,7 @@ in
       pname = "xtensa-llvm-toolchain";
       inherit version;
       src = fetchurl {
-        url = "https://github.com/espressif/llvm-project/releases/download/esp-${version}/clang-esp-${version}-x86_64-linux-gnu.tar.xz";
+        url = "https://github.com/espressif/llvm-project/releases/download/esp-${version}/libs-clang-esp-${version}-x86_64-linux-gnu.tar.xz";
         inherit hash;
       };
 
@@ -28,17 +28,10 @@ in
 
       installPhase = ''
         cp -r . $out
-        for FILE in $(ls $out/bin); do
-          FILE_PATH="$out/bin/$FILE"
-          if [[ -x $FILE_PATH && $FILE != *lld* ]]; then
-            mv $FILE_PATH $FILE_PATH-unwrapped
-            makeWrapper ${fhsEnv}/bin/xtensa-toolchain-env $FILE_PATH --add-flags "$FILE_PATH-unwrapped"
-          fi
-        done
       '';
 
       meta = with lib; {
-        description = "Xtensa LLVM tool chain";
+        description = "Xtensa LLVM tool chain libraries";
         homepage = "https://github.com/espressif/llvm-project";
         license = licenses.gpl3;
       };

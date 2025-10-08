@@ -2,3 +2,4 @@
 .envrc
 target/
 .embuild/
+dx-esp-flake/

@@ -1,7 +1,7 @@
 final: prev: rec {
   # LLVM
-  llvm-xtensa = prev.callPackage ./pkgs/llvm-xtensa-bin.nix { };
-  llvm-xtensa-lib = prev.callPackage ./pkgs/llvm-xtensa-lib.nix { };
+  llvm-xtensa = prev.callPackage ./pkgs/llvm-xtensa-bin.nix {};
+  llvm-xtensa-lib = prev.callPackage ./pkgs/llvm-xtensa-lib.nix {};
 
   # Rust
   rust-xtensa = import ./pkgs/rust-xtensa-bin.nix {
@@ -12,11 +12,7 @@ final: prev: rec {
     fetchurl = prev.fetchurl;
   };
 
-  esp-idf-full = prev.callPackage ./pkgs/esp-idf {
-    inherit (prev)
-      stdenv lib fetchFromGitHub makeWrapper callPackage python3
-      git wget gnumake flex bison gperf pkg-config cmake ninja ncurses5 dfu-util;
-  };
+  esp-idf-full = prev.callPackage ./pkgs/esp-idf {};
 
   esp-idf-xtensa = esp-idf-full.override {
     toolsToInclude = [
