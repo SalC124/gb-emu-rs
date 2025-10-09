@@ -2030,6 +2030,7 @@ version = "0.1.0"
 dependencies = [
  "dioxus",
  "gb-core",
+ "gb-runner",
 ]
 
 [[package]]
@@ -2039,6 +2040,7 @@ dependencies = [
  "embuild",
  "esp-idf-svc",
  "gb-core",
+ "gb-runner",
  "log",
 ]
 

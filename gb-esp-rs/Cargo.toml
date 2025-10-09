@@ -29,6 +29,7 @@ root-crate = true
 log = "0.4"
 esp-idf-svc = "0.51"
 gb-core = { path = "../gb-core/" }
+gb-runner = { path = "../gb-runner/" }
 
 # --- Optional Embassy Integration ---
 # esp-idf-svc = { version = "0.51", features = ["critical-section", "embassy-time-driver", "embassy-sync"] }
